@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"sync"
 )
 
 type Case struct {
@@ -53,14 +54,23 @@ func (c *Checker) uploadConfigs() error {
 
 func (c *Checker) Check() (string, bool) {
 	var buffer bytes.Buffer
+	var wg sync.WaitGroup
 	errors := make(chan string)
 	for _, service := range c.Services {
-		go checkService(service, errors)
+		wg.Add(1)
+		go checkService(service, errors, &wg)
 	}
+	go func() { //https://stackoverflow.com/questions/21819622/let-golang-close-used-channel-after-all-goroutines-finished
+		wg.Wait()
+		close(errors)
+	}()
+	log.Println("before errors")
 	for err := range errors {
 		buffer.WriteString(err)
 	}
+	log.Println("after errors")
 	result := buffer.String()
+	log.Println(result)
 	ok := true
 	if len(result) > 0 {
 		ok = false
@@ -68,7 +78,8 @@ func (c *Checker) Check() (string, bool) {
 	return result, ok
 }
 
-func checkService(s Service, errors chan<- string) {
+func checkService(s Service, errors chan<- string, wg *sync.WaitGroup) {
+	defer wg.Done()
 	for _, testCase := range s.Cases {
 		url := s.Domain + testCase.Url
 		res, err := http.Get(url)
@@ -82,5 +93,4 @@ func checkService(s Service, errors chan<- string) {
 			continue
 		}
 	}
-	close(errors)
 }

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"time"
 
 	"github.com/adonskoi/super-health-checker-bot/app/checker"
@@ -39,7 +40,7 @@ func main() {
 	// listen bots update
 	updates := bot.GetUpdatesChan(updateConfig)
 	go listenUpdates(bot, updates)
-	
+
 	// channel for send alert messages
 	messages := make(chan string)
 	go sendMessage(bot, messages)
@@ -54,7 +55,7 @@ func main() {
 		if !ok {
 			messages <- result
 		}
-		time.Sleep(5 * time.Second)
+		time.Sleep(4 * time.Second)
 	}
 
 }
@@ -66,14 +67,15 @@ func listenUpdates(bot *tbapi.BotAPI, updates tbapi.UpdatesChannel) {
 		}
 		text := "I need .json files"
 		if update.Message.Chat.ID != ChatID {
-			text = "fuck off"
+			text = "fuck off" // TODO translate to other lang
 		} else if update.Message.Document != nil {
 			fileID := update.Message.Document.FileID
 			fileUrl, err := bot.GetFileDirectURL(fileID)
 			if err != nil {
 				log.Println(err)
 			}
-			err = downloadFile(Path, fileUrl)
+			filePath := path.Join(Path, update.Message.Document.FileName)
+			err = downloadFile(filePath, fileUrl)
 			if err != nil {
 				log.Println(err)
 			}
