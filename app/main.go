@@ -25,8 +25,6 @@ func init() {
 }
 
 func main() {
-	log.Println(TelegramAPIToken)
-	log.Println(ChatID)
 	bot, err := tbapi.NewBotAPI(TelegramAPIToken) // interface in bot.go
 	if err != nil {
 		log.Fatal(err)
@@ -55,7 +53,7 @@ func main() {
 		if !ok {
 			messages <- result
 		}
-		time.Sleep(4 * time.Second)
+		time.Sleep(120 * time.Second)
 	}
 
 }

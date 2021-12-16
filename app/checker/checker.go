@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path"
 	"sync"
+	"time"
 )
 
 type Case struct {
@@ -64,11 +67,9 @@ func (c *Checker) Check() (string, bool) {
 		wg.Wait()
 		close(errors)
 	}()
-	log.Println("before errors")
 	for err := range errors {
 		buffer.WriteString(err)
 	}
-	log.Println("after errors")
 	result := buffer.String()
 	log.Println(result)
 	ok := true
@@ -80,16 +81,21 @@ func (c *Checker) Check() (string, bool) {
 
 func checkService(s Service, errors chan<- string, wg *sync.WaitGroup) {
 	defer wg.Done()
+	client := http.Client{
+		Timeout: 5 * time.Second,
+	}
 	for _, testCase := range s.Cases {
 		url := s.Domain + testCase.Url
-		res, err := http.Get(url)
+		resp, err := client.Get(url)
 		if err != nil {
 			log.Println(err)
 			errors <- err.Error()
 			continue
 		}
-		if res.StatusCode != testCase.Code {
-			errors <- fmt.Sprintf("%s response with status: %d", url, testCase.Code)
+		io.Copy(ioutil.Discard, resp.Body)	
+		resp.Body.Close()
+		if resp.StatusCode != testCase.Code {
+			errors <- fmt.Sprintf("%s response status: %d != %d", url, resp.StatusCode, testCase.Code)
 			continue
 		}
 	}
