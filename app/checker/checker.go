@@ -71,7 +71,6 @@ func (c *Checker) Check() (string, bool) {
 		buffer.WriteString(err)
 	}
 	result := buffer.String()
-	log.Println(result)
 	ok := true
 	if len(result) > 0 {
 		ok = false
@@ -99,5 +98,6 @@ func checkService(s Service, errors chan<- string, wg *sync.WaitGroup) {
 			errors <- fmt.Sprintf("%s response status: %d != %d", url, resp.StatusCode, testCase.Code)
 			continue
 		}
+		log.Println("OK: for service", s.Title, "url", url)
 	}
 }
