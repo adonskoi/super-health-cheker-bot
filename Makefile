@@ -1,6 +1,8 @@
 build:
 	go build -o bot ./app
 
+lint:
+	gofmt -w .
 run:
 	go run ./app 
 

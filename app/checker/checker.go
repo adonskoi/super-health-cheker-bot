@@ -85,14 +85,15 @@ func checkService(s Service, errors chan<- string, wg *sync.WaitGroup) {
 		Timeout: 5 * time.Second,
 	}
 	for _, testCase := range s.Cases {
+		log.Println("Checking", s.Title, "for", testCase.Url)
 		url := s.Domain + testCase.Url
 		resp, err := client.Get(url)
 		if err != nil {
-			log.Println(err)
+			log.Println("Error: for url", url, err)
 			errors <- err.Error()
 			continue
 		}
-		io.Copy(ioutil.Discard, resp.Body)	
+		io.Copy(ioutil.Discard, resp.Body)
 		resp.Body.Close()
 		if resp.StatusCode != testCase.Code {
 			errors <- fmt.Sprintf("%s response status: %d != %d", url, resp.StatusCode, testCase.Code)
